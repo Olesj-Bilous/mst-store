@@ -29,8 +29,8 @@ export const StoreInput = observer((props: { provider: any, root: any, propName:
         {input}
         {validationMsgs.length !== 0 && (
             <List bordered={true} size={'small'}>
-              {validationMsgs.map((msg:string) => (
-                <List.Item style={{color:'red'}}>{msg}</List.Item>
+              {validationMsgs.map((msg:string, key:number) => (
+                <List.Item key={key} style={{color:'red'}}>{msg}</List.Item>
                 ))}
             </List>
           )}
@@ -46,8 +46,8 @@ export const StoreSelect = observer((props: { optionsType: string, provider: any
   const selected = (context as any)[props.propName].id;
 
   return (
-    <Select value={selected} options={
-      options.map((opt: any) => ({ value: opt.id, label: opt.displayName}))
-    } onChange={newValue => (context as any).setDefault(props.propName, newValue)} />
-      )
+      <Select value={selected} options={
+          options.map((opt: any) => ({ value: opt.id, label: opt.displayName}))
+        } onChange={newValue => (context as any).setDefault(props.propName, newValue)} />
+    )
 });
