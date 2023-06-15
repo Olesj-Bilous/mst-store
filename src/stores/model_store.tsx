@@ -1,15 +1,18 @@
-import { isObservableMap } from 'mobx';
-import { cast, getType, getRoot, getPathParts, isStateTreeNode } from 'mobx-state-tree';
+import { values, isObservableMap } from 'mobx';
+import { Instance, cast, getType, getRoot, getPath, getPathParts, isStateTreeNode, types, getPropertyMembers } from 'mobx-state-tree';
 
-import { BaseStore } from './base_store';
 import { validators, validationMsgs, camelToDisplayCase } from 'utils/validation';
+import { RootStore, RootStoreInstance } from './root_store';
 
-export const ModelStore = BaseStore.named('ModelStore').actions(self => ({
+export const ModelStore = types.model('ModelStore', {
+    id: types.identifier
+  }).actions(self => ({
     setDefault<K extends keyof typeof self, T extends typeof self>(key: K, value: T[K]) {
-      if (key as any === 'id') return;
+      const idfer = ModelStore.identifierAttribute;
+      if (key === 'id') return;
       if (typeof self[key] === 'number') {
         const num = Number(value);
-        if (!isNaN(num)) self[key] = num as any;
+        if (!isNaN(num)) self[key] = num;
         return;
       }
       self[key] = cast(value);
@@ -19,54 +22,96 @@ export const ModelStore = BaseStore.named('ModelStore').actions(self => ({
       get modelDisplayName() {
         return camelToDisplayCase(getType(self).name);
       },
-      getDisplayName<K extends keyof typeof self>(key: K) {
+      get hasTouched() {
+        if (self.id === '-1') return false;
+        for (let propName in self) {
+          if (propName === 'id') continue;
+          const pm = getPropertyMembers(RootStore);
+          if (getPath(self) === '' && ['fresh', 'annotations'].includes(propName)) continue;
+          let prop = self[propName as keyof typeof self];
+          if (isObservableMap(prop)) {
+            for (let mapping of values(prop)) {
+              if (mapping.id === '-1') continue;
+              const touched = (mapping as ModelStoreInstance).hasTouched;
+              if (touched) return true;
+            }
+            continue;
+          }
+          if (getPath(self) === '' && isStateTreeNode(prop)) continue;  // do not switch order on checks, isStateTreeNode evaluates to true for types.map :)
+          const touched = (self as ModelStoreInstance).isTouched(propName as keyof typeof self);
+          if (touched) return true;
+        }
+        return false;
+      },
+      get isValid() {
+        if (self.id === '-1') return true;
+        for (let propName in self) {
+          if (propName === 'id') continue;
+          if (getPath(self) === '' && ['fresh', 'annotations'].includes(propName)) continue;
+          let prop = self[propName as keyof typeof self];
+          if (isObservableMap(prop)) {
+            for (let mapping of values(prop)) {
+              if (mapping.id === '-1') continue;
+              const notValid = !(mapping as ModelStoreInstance).isValid
+              if (notValid) return false;
+            }
+            continue;
+          }
+          if (getPath(self) === '' && isStateTreeNode(prop)) continue; // do not switch order on checks, isStateTreeNode evaluates to true for types.map :)
+          const notValid = (self as ModelStoreInstance).validate(propName as keyof typeof self).length; 
+          if (notValid) return false;
+        }
+        return true;
+      },
+      getDisplayName<K extends keyof typeof self>(key : K) : string {
         const storeType = getType(self).name;
-        const notes = ((getRoot(self) as any).annotations as any)[storeType];
-        let name = (notes as any)?.displayName;
+        const notes = (getRoot(self) as RootStoreInstance).annotations[storeType];
+        let name = ""; // notes[key as string].displayName;
         if (name == null || typeof name !== 'string' || name.replace(' ', '') === '') {
-          const keyString = key.toString();
-          name = camelToDisplayCase(keyString)
-          if (name === '') return keyString;
+          return camelToDisplayCase(key.toString());
         }
         return name;
       },
-      isTouched(key:string) {
+      isTouched<K extends keyof typeof self>(key : K) : boolean {
         if (key === 'id') return false;
-        let root = getRoot(self);
-        const item = localStorage.getItem('StoreCheckpoint');
-        if (item == null) {
-          (root as any).save();
+        const root = getRoot(self) as RootStoreInstance;
+        const snapshot = localStorage.getItem('StoreCheckpoint');
+        if (snapshot == null) {
+          root.save();
           return false;
         }
-        const snapshot = cast(JSON.parse(item));
+        let original = cast(JSON.parse(snapshot));
+        const target = self[key];
         const path = getPathParts(self);
-        let original = snapshot;
-        path.forEach(function(part) {
-          original = original[part]});
-        const target = (self as any)[key];
-        return (root as any).fresh && original[key] !== (isStateTreeNode(target) ? (target as any).id : target);
+        path.forEach(part => { original = original[part]});
+        return root.fresh && original[key] !== (isStateTreeNode(target) ? (target as ModelStoreInstance).id : target);
       },
-      validate<K extends keyof typeof self>(key: K) {
+      validate<K extends keyof typeof self>(key : K) : string[] {
         const storeType = getType(self).name;
-        const notes = ((getRoot(self) as any).annotations as any)[storeType];
+        const notes = (getRoot(self) as RootStoreInstance).annotations[storeType];
         if (!notes) return [];
-        const annotation = (notes as any)[key];
-        if (isObservableMap(self[key])) return true;
+        const annotation = notes[key as string];
+        if (isObservableMap(self[key])) return [];
         const type = isStateTreeNode(self[key]) ? 'reference' : typeof self[key];
-        const validate = (validators as any)[type];
+        if (type !== 'string' && type !== 'number' && type !== 'reference') return [];
+        const validator = validators[type];
         const msgs = [];
         for (let note in annotation) {
-          if (!validate[note].apply(null, [annotation[note], self[key]]))
-            msgs.push((validationMsgs as any)[type][note].replace('$0', type === 'reference' ? getType(self[key]).name : annotation[note]));
+          type typee = keyof typeof annotation;
+          const annota = note as typee;
+          const nota = annotation[annota];
+          const validor = validator[note as keyof typeof annotation];
+          if (!(validor as any).apply(null, [nota, (self[key] as Parameters<typeof validor>[1])]))
+            msgs.push((validationMsgs as any)[type][note].replace('$0', type === 'reference' ? self[key].modelDisplayName : nota));
         }
         return msgs;
       },
-      isRequired<K extends keyof typeof self>(key: K) {
+      isRequired<K extends keyof typeof self>(key: K) : boolean {
         const storeType = getType(self).name;
-        const notes = ((getRoot(self) as any).annotations as any)[storeType];
-        const checkNote = notes && notes[key];
-        return checkNote && checkNote['required'];
+        const notes = (getRoot(self) as RootStoreInstance).annotations[storeType];
+        const checkNote = notes && notes[key as string];
+        return checkNote != null && (checkNote['required'] ?? false);
       }
   }});
 
-export type ModelStoreInstance = {};
+export type ModelStoreInstance = Instance<typeof ModelStore>;

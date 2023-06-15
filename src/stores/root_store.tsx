@@ -1,10 +1,11 @@
-import { types, getSnapshot, applySnapshot } from 'mobx-state-tree';
+import { Instance, types, getSnapshot, applySnapshot } from 'mobx-state-tree';
 
-import { BaseStore } from './base_store';
+import { ModelStore, ModelStoreInstance } from './model_store';
+import { Annotation, FieldAnnotation, NumberAnnotation, StringAnnotation } from 'utils/validation';
 
-export const RootStore = BaseStore.named('RootStore').props({
+export const RootStore = ModelStore.named('RootStore').props({
   fresh: types.optional(types.boolean, true),
-  annotations: types.frozen()
+  annotations: types.frozen<{[key : string] : { [key : string] : Annotation | FieldAnnotation | StringAnnotation | NumberAnnotation }}>()
 }).actions(self => ({
   save() {
     localStorage.setItem('StoreCheckpoint', JSON.stringify(getSnapshot(self)));
@@ -17,3 +18,5 @@ export const RootStore = BaseStore.named('RootStore').props({
       applySnapshot(self, JSON.parse(checkpoint));
   }
 }));
+
+export type RootStoreInstance = Instance<typeof RootStore>;

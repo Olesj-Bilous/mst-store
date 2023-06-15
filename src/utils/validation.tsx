@@ -3,8 +3,8 @@ import { IAnyStateTreeNode, isValidReference } from 'mobx-state-tree'
 const minLengthString = (min : number, prop : string) => min <= prop.length;
 const maxLengthString = (max : number, prop : string) => prop.length <= max;
 
-const isEmailAddress = (_justDoIt: boolean, prop: string) => prop.match('^[\\w-\\.]+@[\\w-]+\\.+[\\w-]{2,4}$');
-const isUrl = (_justDoIt: boolean, prop: string) => prop.match('[(http(s)?):\\/\\/(www\\.)?a-zA-Z0-9@:%._\\+~#=]{2,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%_\\+.~#?&//=]*)');
+const isEmailAddress = (_justDoIt: boolean, prop: string) => prop.match('^[\\w-\\.]+@[\\w-]+\\.+[\\w-]{2,4}$')?.length ?? false;
+const isUrl = (_justDoIt: boolean, prop: string) => prop.match('[(http(s)?):\\/\\/(www\\.)?a-zA-Z0-9@:%._\\+~#=]{2,256}\\.[a-z]{2,6}\\b([-a-zA-Z0-9@:%_\\+.~#?&//=]*)')?.length ?? false;
 
 const minValueNumber = (min: number, prop: number) => min <= prop;
 const maxValueNumber = (max: number, prop: number) => prop <= max;
@@ -13,6 +13,11 @@ const minLengthNumber = (min: number, prop: number) => (10**(min - 1)) <= prop;
 const maxLengthNumber = (min: number, prop: number) => prop <= (10**min);
 
 const requiredReference = (_justDoIt: boolean, nodeGetter: IAnyStateTreeNode) => nodeGetter.id !== '-1' && isValidReference(() => nodeGetter);
+
+export type Annotation = { required? : boolean }
+export type FieldAnnotation = { minLength? : number, maxLength? : number } & Annotation;
+export type StringAnnotation = { isEmailAddress? : boolean, isUrl? : boolean } & FieldAnnotation;
+export type NumberAnnotation = { minValue? : number, maxValue? : number } & FieldAnnotation;
 
 export const validators = {
   string : {
@@ -52,7 +57,7 @@ export const validationMsgs = {
   }
 }
 
-export const camelToDisplayCase = ( camelString : string) => {
+export const camelToDisplayCase = (camelString : string) => {
   const parts = camelString.match('^([a-z]+)([A-Z][a-z]*)*$');
   if (parts == null) return '';
   let display = parts[1].charAt(0).toUpperCase() + parts[1].slice(1);
