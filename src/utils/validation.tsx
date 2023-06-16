@@ -12,7 +12,7 @@ const maxValueNumber = (max: number, prop: number) => prop <= max;
 const minLengthNumber = (min: number, prop: number) => (10**(min - 1)) <= prop;
 const maxLengthNumber = (min: number, prop: number) => prop <= (10**min);
 
-const requiredReference = (_justDoIt: boolean, nodeGetter: IAnyStateTreeNode) => nodeGetter.id !== '-1' && isValidReference(() => nodeGetter);
+const requiredReference = (_justDoIt: boolean, nodeGetter: IAnyStateTreeNode) => nodeGetter != null && isValidReference(() => nodeGetter);
 
 export type Annotation = { required? : boolean }
 export type FieldAnnotation = { minLength? : number, maxLength? : number } & Annotation;

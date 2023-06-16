@@ -10,7 +10,7 @@ export const Address = ModelStore.named('address').props({
 
 export const Enterprise = ModelStore.named('enterprise').props({
   name: types.string,
-  address: types.reference(Address)
+  address: types.maybeNull(types.reference(Address))
 })
 
 export const Store = RootStore.named('store').props({
@@ -28,5 +28,5 @@ export const storeInstance = Store.create({
   enterprise: '0',
   addresss: [{id:'0',street:'A. Boulevard'}],
   enterprises: [{id:'0',name:'Landsraad',address:'0'}],
-  annotations: {enterprise:{name:{required:true}}}
+  annotations: {enterprise:{name:{required:true},address:{required:true}}}
 });

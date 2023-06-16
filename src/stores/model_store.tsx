@@ -15,7 +15,7 @@ export const ModelStore = types.model('ModelStore', {
         if (!isNaN(num)) self[key] = num;
         return;
       }
-      self[key] = cast(value);
+      self[key] = self[key] != null && isStateTreeNode(self[key]) && value === '-1' ? null : cast(value);
     }
   })).views(self => {
     return {
@@ -92,7 +92,7 @@ export const ModelStore = types.model('ModelStore', {
         if (!notes) return [];
         const annotation = notes[key as string];
         if (isObservableMap(self[key])) return [];
-        const type = isStateTreeNode(self[key]) ? 'reference' : typeof self[key];
+        const type = getPropertyMembers(self).properties[key as string].name.includes('reference') ? 'reference' : typeof self[key];
         if (type !== 'string' && type !== 'number' && type !== 'reference') return [];
         const validator = validators[type];
         const msgs = [];
@@ -102,7 +102,7 @@ export const ModelStore = types.model('ModelStore', {
           const nota = annotation[annota];
           const validor = validator[note as keyof typeof annotation];
           if (!(validor as any).apply(null, [nota, (self[key] as Parameters<typeof validor>[1])]))
-            msgs.push((validationMsgs as any)[type][note].replace('$0', type === 'reference' ? self[key].modelDisplayName : nota));
+            msgs.push((validationMsgs as any)[type][note].replace('$0', type === 'reference' ? self[key]?.modelDisplayName ?? key : nota));
         }
         return msgs;
       },
