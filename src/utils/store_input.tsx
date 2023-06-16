@@ -10,23 +10,23 @@ export const StoreInput = observer((props: { provider: any, root: any, propName:
   const context = useStoreContext();
   const prop = props.selector(context as any)[props.propName];
 
-  const validationMsgs = (context as any).validate(props.propName);
+  const validationMsgs = props.selector(context as any).validate(props.propName);
 
   let input;
   if (props.propName === 'id') {
     input = <span>{prop}</span>
   } else {
     switch (typeof prop) {
-      case 'boolean': input = <Checkbox checked={prop} onChange={e => (context as any).setDefault(props.propName, e.target.checked)} />; break;
+      case 'boolean': input = <Checkbox checked={prop} onChange={e => props.selector(context as any).setDefault(props.propName, e.target.checked)} />; break;
       default:
         input = isStateTreeNode(prop)
           ? <StoreSelect optionsType={getType(prop).name} provider={props.provider} root={props.root} propName={props.propName} selector={props.selector} />
-          : <Input value={prop} onChange={e => (context as any).setDefault(props.propName, e.target.value)} />;
+          : <Input value={prop} onChange={e => props.selector(context as any).setDefault(props.propName, e.target.value)} />;
     }
   }
 
   return (
-      <Form.Item required={(context as any).isRequired(props.propName)} label={(context as any).getDisplayName(props.propName)}>
+      <Form.Item required={props.selector(context as any).isRequired(props.propName)} label={props.selector(context as any).getDisplayName(props.propName)}>
         {input}
         {validationMsgs.length !== 0 && (
             <List bordered={true} size={'small'}>
