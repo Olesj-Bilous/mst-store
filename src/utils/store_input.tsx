@@ -8,7 +8,7 @@ import { ContextStore } from "stores/root_store";
 
 export const StoreInput = observer((props: { provider: any, root: any, propName: string, selector?: any }) => {
   const context = useStoreContext();
-  const prop = props.selector(context as any);
+  const prop = props.selector(context as any)[props.propName];
 
   const validationMsgs = (context as any).validate(props.propName);
 
@@ -41,7 +41,7 @@ export const StoreInput = observer((props: { provider: any, root: any, propName:
 
 export const StoreSelect = observer((props: { optionsType: string, provider: any, root: any, propName: string, selector?: any }) => {
   const rootStore = useStoreContext();
-  const options = values((rootStore as any)[props.optionsType + 's']);
+  const options = rootStore[props.optionsType + 's'];
 
   const context = props.selector(rootStore);
   const selected = (context as any)[props.propName].id;

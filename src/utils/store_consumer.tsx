@@ -1,7 +1,7 @@
 import { Card, Form } from "antd";
 import { observer } from "mobx-react-lite";
 
-import {useStoreContext} from 'utils/useStoreContext'
+import { useStoreContext } from 'utils/useStoreContext'
 import { StoreInput } from "./store_input";
 
 export const StoreConsumer = observer(<TStore, TContext, TRoot>(props: {
@@ -16,7 +16,7 @@ export const StoreConsumer = observer(<TStore, TContext, TRoot>(props: {
 
   const inputs = [];
   for (let propName in context) {
-      const selector =( context:any )=> props.contextDeriver(context)[propName];
+      const selector = props.contextDeriver;
       inputs.push(<StoreInput provider={props.targetContext} propName={propName} root={props.rootContext} selector={selector} />);
   }
 
