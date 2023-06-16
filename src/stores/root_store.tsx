@@ -2,6 +2,7 @@ import { Instance, types, getSnapshot, applySnapshot } from 'mobx-state-tree';
 
 import { ModelStore, ModelStoreInstance } from './model_store';
 import { Annotation, FieldAnnotation, NumberAnnotation, StringAnnotation } from 'utils/validation';
+import { createContext } from 'react';
 
 export const RootStore = ModelStore.named('RootStore').props({
   fresh: types.optional(types.boolean, true),
@@ -20,3 +21,5 @@ export const RootStore = ModelStore.named('RootStore').props({
 }));
 
 export type RootStoreInstance = Instance<typeof RootStore>;
+
+export const ContextStore = createContext<null|React.Context<null|any>>(null);

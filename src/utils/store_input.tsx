@@ -3,11 +3,12 @@ import { observer } from "mobx-react-lite";
 import { values } from "mobx";
 import { getType, isStateTreeNode } from "mobx-state-tree";
 
-import useStoreContext from "./useStoreContext";
+import { useStoreContext } from "./useStoreContext";
+import { ContextStore } from "stores/root_store";
 
-export const StoreInput = observer((props: { provider: any, root: any, propName: string }) => {
-  const context = useStoreContext(props.provider);
-  const prop = (context as any)[props.propName];
+export const StoreInput = observer((props: { provider: any, root: any, propName: string, selector?: any }) => {
+  const context = useStoreContext();
+  const prop = props.selector(context as any);
 
   const validationMsgs = (context as any).validate(props.propName);
 
@@ -19,7 +20,7 @@ export const StoreInput = observer((props: { provider: any, root: any, propName:
       case 'boolean': input = <Checkbox checked={prop} onChange={e => (context as any).setDefault(props.propName, e.target.checked)} />; break;
       default:
         input = isStateTreeNode(prop)
-          ? <StoreSelect optionsType={getType(prop).name} provider={props.provider} root={props.root} propName={props.propName} />
+          ? <StoreSelect optionsType={getType(prop).name} provider={props.provider} root={props.root} propName={props.propName} selector={props.selector} />
           : <Input value={prop} onChange={e => (context as any).setDefault(props.propName, e.target.value)} />;
     }
   }
@@ -38,11 +39,11 @@ export const StoreInput = observer((props: { provider: any, root: any, propName:
     );
 });
 
-export const StoreSelect = observer((props: { optionsType: string, provider: any, root: any, propName: string }) => {
-  const rootStore = useStoreContext(props.root);
+export const StoreSelect = observer((props: { optionsType: string, provider: any, root: any, propName: string, selector?: any }) => {
+  const rootStore = useStoreContext();
   const options = values((rootStore as any)[props.optionsType + 's']);
 
-  const context = useStoreContext(props.provider);
+  const context = props.selector(rootStore);
   const selected = (context as any)[props.propName].id;
 
   return (

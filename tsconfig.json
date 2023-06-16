@@ -4,7 +4,7 @@
       "rootDirs": [ "src", "node_modules" ],
       "outDir" : "dist",
       "target": "es6",
-      "module": "es6",
+      "module": "esnext",
       "lib": [
         "dom",
         "dom.iterable",
